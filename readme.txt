@@ -23,18 +23,10 @@ information/base: Writing X509 certificate to '/etc/icinga2/pki/host2.fr.crt'.
 information/pki: Writing certificate to file '/etc/icinga2/pki/trusted-master.crt'.
 information/cli: Writing signed certificate to file '/etc/icinga2/pki/host2.fr.crt'.
 information/cli: Writing CA certificate to file '/etc/icinga2/pki/ca.crt'.
-‘/etc/icinga2/zones.conf’ -> ‘/etc/icinga2/zones.conf.20161104_040216.bak’
-information/base: Writing private key to '/etc/icinga2/pki/host2.fr.key'.
-information/base: Writing X509 certificate to '/etc/icinga2/pki/host2.fr.crt'.
-information/pki: Writing certificate to file '/etc/icinga2/pki/trusted-master.crt'.
-information/cli: Writing signed certificate to file '/etc/icinga2/pki/host2.fr.crt'.
-information/cli: Writing CA certificate to file '/etc/icinga2/pki/ca.crt'.
 
-the skript does
 configure pki
 setup the zones on agent
 setup api.conf
 
 setup the zone on  icingaserver is not yet part of the skript
-
 
