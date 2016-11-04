@@ -2,13 +2,13 @@
 Generate Incing2 Agent Configuration
 
 
-# 20161104 Siegfried
+20161104 Siegfried
 
 example listfile
 
 ## bla
-host1.firma.de win--
-host2.firma.fr ubuntulinux--
+host1.firma.de win  
+host2.firma.fr ubuntulinux  
 host3.firma.de ubuntulinux
 
 
