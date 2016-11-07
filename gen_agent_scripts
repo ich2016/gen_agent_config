@@ -1,72 +1,142 @@
 #!/bin/bash
 #
-# 20161104 Siegfried
+#
+# siegfried 20161107
+#
 
 
 # define sources
 ORGAGNTSCRIPT_UBUNTU_LINUX='icinga2-agent-ubuntu.sh'
 ORGAGNTSCRIPT_WIN='icinga2-agent-win.ps1'
 
-# script config
-OUTPUTDIR="${0##*/}.out"
+# script config begin
+script_name=${0##*/}
+OUTPUTDIR="${script_name}.out"
 PARENTZONE='master'
 ENDPOINTS='myicingaserver'
 CASERVER='myicingaserver'
 TAB='    '
-script_name=${0##*/}
+time_stamp=$(date +%Y%m%d_%H%M%S)
+CR=""
+# script config end
 
 
-if [ "$1" == "-h" ] || [ "$1" == "-help" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ] ; then
+function show_help() {
   echo
-  echo "${0##*/} hostlist"
-  echo "prog | ${0##*/}"
-  echo
+  echo "${script_name} -l hostlist"
+  echo "prog | ${iscript_name}"
+  echo ""
   echo "Options"
-  echo "-     read from stdin"
-  echo "list  read list"
-  echo
+  echo "-                  read from stdin"
+  echo "-l list            read list"
+  echo "-h, -help, --help  show this help"
   exit 0
-fi
+}
 
 
-if [ "$1" == "-" ] ; then
-  declare -i is_term=0
+# define work Variables
+w_args=""
+lists=""
+declare -i set_stdin=0
+declare -i num_lists=0
+declare -i script_error_exit=0
+declare -i host_count=0
+declare -A agent_name_count
+declare -i loop_skip=0
+declare -i output_dir_ready=0
+
+
+# parse commandline
+while [ $# -gt 0 ] ; do
+  case $1 in
+    --help|-help)
+      show_help
+    ;;
+    -)
+      (( set_stdin++ ))
+    ;;
+    --*)
+      w_args+=" "${1}
+    ;;
+    -*)
+      while read -n 1 aa ; do
+        if [ ${#aa} -lt 1 ] ; then
+          continue
+        fi
+        case $aa in
+          h)
+            show_help
+          ;;
+          l)
+            if [ -z $2 ] ; then
+              echo "${script_name}: argument -l needs a valid file as hostlist" 1>&2
+              (( script_error_exit++ ))
+            elif [ ! -e $2 ] ; then
+              echo "${script_name}: hostlist $2 not found" 1>&2
+              (( script_error_exit++ ))
+            else
+              (( num_lists++ ))
+              lists+=" "$2
+            fi
+            shift
+          ;;
+          *)
+            w_args+=" -"$aa
+          ;;
+        esac
+      done <<< ${1/-/}
+    ;;
+    *)
+      w_args+=" "${1}
+    ;;
+  esac
   shift
+done
+
+
+# check weather stdin is used
+if [ $set_stdin -gt 0 ] ; then
+  declare -i is_term=0
 elif ! [ -t 0 ] ; then
   declare -i is_term=0
 else
   declare -i is_term=1
 fi
 
-list=$1
+
+# enter stdin to hosts listes
+if [ $is_term -lt 1 ] ; then
+  (( num_lists++ ))
+  lists="/dev/fd/0${lists}"
+fi
 
 
-if [ $is_term -gt 0 ] ; then
-  if [ -z $list ] ; then
-    echo "${script_name}: file with hostlist is needed" 1>&2
-    echo "${script_name}: hostlist" 1>&2
-    exit 1
-  fi
+# check weather needs are fullfilled
+if [ $num_lists -lt 1 ] ; then
+    echo "${script_name}: file with hostlist or stdin is needed" 1>&2
+    (( script_error_exit++ ))
 fi
 
 
 if ! [ -r ${ORGAGNTSCRIPT} ] ; then
-  echo "${script_name}: Powershell Script ${ORGAGNTSCRIPT} is not readable" 1>&2
+  echo "${script_name}: Script ${ORGAGNTSCRIPT} is not readable" 1>&2
+  (( script_error_exit++ ))
+fi
+
+
+if [ ${#w_args} -gt 0 ] ; then
+  echo "${script_name}: Arguments${w_args} unknown" 1>&2
+  (( script_error_exit++ ))
+fi
+
+
+if [ $script_error_exit -gt 0 ] ; then
+  echo "tschau"
   exit 1
 fi
 
 
-if ! [ -z $list ]; then
-  if ! [ -r $list ] ; then
-    echo "${script_name}: file $list is not readable"
-    exit 1
-  fi
-fi
-
-
-declare -i output_dir_ready=0
-
-
+# prepare output directory
 function prep_output_dir() {
   local -i error_exit=0
 
@@ -88,12 +158,14 @@ function prep_output_dir() {
 }
 
 
+# check success of create output directory
 function prep_output_dir_error_exit() {
   echo "${script_name}: preparation of $OUTPUTDIR failed" 1>&2
   exit 1
 }
 
 
+# funtion to create an win agent config
 function print_out_win() {
    y=$1
    z=$2
@@ -107,21 +179,22 @@ function print_out_win() {
    exec 3>&1
    exec 1>> $output_file
 
-   echo
-   echo '$icinga = Icinga2AgentModule `'
-   echo "${TAB}-AgentName" \'$y\' '`'
-   echo "${TAB}-Ticket"  \'$z\' '`'
-   echo "${TAB}-ParentZone" \'$PARENTZONE\' '`'
-   echo "${TAB}-ParentEndpoints" \'$ENDPOINTS\' '`'
-   echo "${TAB}-CAServer" \'$CASERVER\'
-   echo 
-   echo '$icinga.installIcinga2Agent() '
+   echo $CR
+   echo '$icinga = Icinga2AgentModule `' $CR
+   echo "${TAB}-AgentName" \'$y\' '`' $CR
+   echo "${TAB}-Ticket"  \'$z\' '`' $CR
+   echo "${TAB}-ParentZone" \'$PARENTZONE\' '`' $CR
+   echo "${TAB}-ParentEndpoints" \'$ENDPOINTS\' '`' $CR
+   echo "${TAB}-CAServer" \'$CASERVER\' $CR
+   echo  $CR
+   echo '$icinga.installIcinga2Agent() ' $CR
 
    exec 1>&3-
 }
 
 
-function print_out_linux() {
+# funtion to create an ubuntu linux agent config
+function print_out_ubuntu_linux() {
    y=$1
    z=$2
 
@@ -141,14 +214,15 @@ function print_out_linux() {
    echo "${TAB}ParentEndpoints=${ENDPOINTS}"
    echo "${TAB}CAServer=${CASERVER}"
    echo 
-   echo set_zone_conf
-   echo set_api.conf
+   echo set_zones_conf
+   echo set_api_conf
    echo create_pki_setup
 
    exec 1>&3-
 }
 
 
+# get pki ticket and call print out functions
 function print_out() {
 
   agent_name=$1
@@ -156,26 +230,6 @@ function print_out() {
 
   if [ "$host_type" == "ubuntulinux" ] ; then
     ORGAGNTSCRIPT=$ORGAGNTSCRIPT_UBUNTU_LINUX
-    print_out_linux $agent_name $( icinga2 pki ticket --cn $agent_name )
-  elif [ "$host_type" == "win" ] ; then
-    ORGAGNTSCRIPT=$ORGAGNTSCRIPT_WIN
-    print_out_win $agent_name $( icinga2 pki ticket --cn $agent_name )
-  else
-    echo "hosttype $host_type is not defined, skip"
-  fi
-}
-
-
-declare -i host_count=0
-
-if [ $is_term -lt 1 ] ; then
-  while read aa ; do
-    set -- $aa
-    if [ $# -lt 2 ] ; then
-      "to few arguments, skip line"
-      continue
-    fi
-    # while [ $# -gt 0 ] ; do
     if [ $output_dir_ready -lt 1 ] ; then
       prep_output_dir
       if [ $? -gt 0 ] ; then
@@ -184,44 +238,65 @@ if [ $is_term -lt 1 ] ; then
         (( output_dir_ready++ ))
       fi
     fi          
-      # print_out $1 $( echo $1 | md5sum )
-      # change me
-    print_out $1 $2
+    print_out_ubuntu_linux $agent_name $( icinga2 pki ticket --cn $agent_name )
     (( host_count++ ))
-    #   shift
-    # done
-  done < /dev/fd/0
-fi
-
-
-if ! [ -z $list ] ; then
-  while read aa ; do
-    # echo "x1x $aa"
-    set -- $aa
-    # echo "x3x"
-    if [ -n "$aa" ] && [ "${1/\#/}" == "$1" ] ; then
-      if [ $# -lt 2 ] ; then
-        echo "to few arguments, skip line"
-        continue
+  elif [ "$host_type" == "win" ] ; then
+    ORGAGNTSCRIPT=$ORGAGNTSCRIPT_WIN
+    if [ $output_dir_ready -lt 1 ] ; then
+      prep_output_dir
+      if [ $? -gt 0 ] ; then
+        prep_output_dir_error_exit
+      else
+        (( output_dir_ready++ ))
       fi
-      # echo "x2x"
-      if [ $output_dir_ready -lt 1 ] ; then
-        prep_output_dir
-        if [ $? -gt 0 ] ; then
-          prep_output_dir_error_exit
-        else
-          (( output_dir_ready++ ))
+    fi          
+    print_out_win $agent_name $( icinga2 pki ticket --cn $agent_name )
+    (( host_count++ ))
+  else
+    echo "${script_name}: hosttype $host_type is not defined, skip line $nr $@ from $insrc" 1>&2
+  fi
+}
+
+
+# read all entered listes, do logic checks, skip on error, and call print_out function
+for list in $lists ; do
+
+  if [ "$list" == "/dev/fd/0" ] ; then
+    insrc="stdin"
+  else
+    insrc="$list"
+  fi
+
+  if ! [ -z $list ] ; then
+  declare -i nr=0
+    while read aa ; do
+      (( nr++ ))
+      loop_skip=0
+      set -- $aa
+      if [ -n "$aa" ] && [ "${1/\#/}" == "$1" ] ; then
+        (( agent_name_count["$1"]++ ))
+        if [ $# -lt 2 ] ; then
+          echo "${script_name}: to few arguments, skip line $nr $aa from $insrc" 1>&2
+          (( loop_skip++ ))
         fi
-      fi          
-      # print_out $aa $( echo $aa | md5sum )
-      # change me
-      print_out $1 $2
-      (( host_count++ ))
-    fi
-  done < $list
-fi
+        if [ ${agent_name_count["$1"]} -gt 1 ] ; then
+          echo "${script_name}: config for agent $1 is the ${agent_name_count["$1"]} definition, skip line $nr $aa from $insrc" 1>&2
+          (( loop_skip++ ))
+        fi
+        if [ "$2" != "win" ] && [ "$2" != "ubuntulinux" ] ; then
+          echo "${script_name}: hosttype $2 is not defined, skip line $nr $@ from $insrc" 1>&2
+          (( loop_skip++ ))
+        fi
+        if [ $loop_skip -gt 0 ] ; then
+          continue
+        fi 
+        print_out $1 $2
+      fi
+    done < $list
+  fi
+done
 
 
-echo "${script_name}: $host_count config scripts written to ${OUTPUTDIR}"
+echo "${script_name}: $host_count config and scripts written to ${OUTPUTDIR}"
 
 
