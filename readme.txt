@@ -19,7 +19,7 @@ gen_agent_scripts
 mkdir: created directory ‘gen_agent_scripts.out’
 gen_icinga_agents: write file gen_agent_acripts.out/Icinga2Agent-host1.firma.de.psm1
 gen_icinga_agents: write file gen_agent_scripts.out/Icinga2Agent-host2.firma.fr.sh
-gen_icinga_agents: 2 config scripts written to test14.out
+gen_icinga_agents: 2 config scripts written to gen_icinga_scripts.out
 execute a script on an agent
 
 ‘/etc/icinga2/zones.conf’ -> ‘/etc/icinga2/zones.conf.20161107_040216.bak’
@@ -33,6 +33,6 @@ the skript does
 setup the zones on agent
 setup api.conf
 configure pki
-other linuxe
 
+other linuxe
 will follow
