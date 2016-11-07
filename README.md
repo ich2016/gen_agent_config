@@ -33,3 +33,6 @@ information/cli: Writing CA certificate to file '/etc/icinga2/pki/ca.crt'.
 setup the zones on agent  
 setup api.conf  
 configure pki  
+
+# other linux
+will follow
