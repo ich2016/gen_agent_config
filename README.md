@@ -16,9 +16,9 @@ format of listfile and stdin is identical
 
 # gen_agent_scripts
 mkdir: created directory ‘gen_agent_scripts.out’  
-test14: write file gen_agent_acripts.out/Icinga2Agent-host1.firma.de.psm1  
-test14: write file gen_agent_scripts.out/Icinga2Agent-host2.firma.fr.sh  
-test14: 2 config scripts written to test14.out  
+gen_icinga_agents: write file gen_agent_acripts.out/Icinga2Agent-host1.firma.de.psm1  
+gen_icinga_agents: write file gen_agent_scripts.out/Icinga2Agent-host2.firma.fr.sh  
+gen_icinga_agents: 2 config scripts written to test14.out  
 
 
 # execute a script on an agent
