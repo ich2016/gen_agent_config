@@ -34,5 +34,5 @@ setup the zones on agent
 setup api.conf  
 configure pki  
 
-# other linux
+# other linuxe
 will follow
