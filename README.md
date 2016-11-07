@@ -12,7 +12,7 @@ host1.firma.de win
 host2.firma.fr ubuntulinux  
 host3.firma.de ubuntulinux
 
-format of listfile and stdin is identical
+format of listfiles and stdin is identical
 
 # gen_agent_scripts
 mkdir: created directory ‘gen_agent_scripts.out’  
