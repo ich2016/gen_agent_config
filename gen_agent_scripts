@@ -131,7 +131,6 @@ fi
 
 
 if [ $script_error_exit -gt 0 ] ; then
-  echo "tschau"
   exit 1
 fi
 
