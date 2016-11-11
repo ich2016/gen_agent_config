@@ -29,10 +29,9 @@ information/pki: Writing certificate to file '/etc/icinga2/pki/trusted-master.cr
 information/cli: Writing signed certificate to file '/etc/icinga2/pki/host2.fr.crt'.  
 information/cli: Writing CA certificate to file '/etc/icinga2/pki/ca.crt'.  
 
-# the skript does  
-setup the zones on agent  
+# the skript does on Agent 
+setup icinga2.conf  
+setup the zones.conf  
 setup api.conf  
-configure pki  
+configure pki 
 
-# other linuxe
-will follow
