@@ -226,7 +226,7 @@ function print_out_linux() {
    echo "set_icinga2_conf"
    echo "set_zones_conf"
    echo "set_api_conf"
-   echo "create_pki_setup nagios nagios"
+   echo "create_pki_setup $user $group"
    echo "check_rollback"
    echo "# remove_backups"
    echo ""
