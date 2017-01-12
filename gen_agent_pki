@@ -1,0 +1,191 @@
+#!/bin/bash
+# 
+# script generates on an icinga2 master with CA the certs for the pki configuration of an agent or satellite
+#
+# siegfried 20170112
+# version 0.1.0
+#
+
+
+# script config
+script_name=${0##*/}
+work_dir=$(pwd)
+ca_path="/var/lib/icinga2/ca"
+certs_gen_path="${ca_path}/certs"
+
+
+# set control vars
+declare -i status_script=0
+
+
+# config agent pki
+function create_certs() {
+
+  local -i create_certs=0
+  user=$1
+  group=$2
+
+  if ! [ -d ${script_name}.certs ] ; then
+    mkdir -v ${script_name}.certs
+    if [ $? -gt 0 ] ; then
+      echo "connot create ${script_name}.certs" 1>&2
+      (( create_certs++ ))
+    fi
+  fi
+
+  if ! [ -d ${certs_gen_path} ] ; then
+    install -v -o $user -g $group -m 0755 -d ${certs_gen_path}
+    if [ $? -gt 0 ] ; then
+      echo "connot create ${certs_gen_path}" 1>&2
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ -e ${certs_gen_path}/${AgentName}.tar.gz ] ; then
+    rm -rv ${certs_gen_path}/${AgentName}.tar.gz
+    if [ $? -gt 0 ] ; then
+      echo "connot remove ${certs_gen_path}/${AgentName}.tar.gz" 1>&2
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ -d ${certs_gen_path}/${AgentName} ] ; then
+    rm -rv ${certs_gen_path}/${AgentName}
+    if [ $? -gt 0 ] ; then
+      echo "connot remove ${certs_gen_path}/${AgentName}" 1>&2
+      (( create_certs++ ))
+    fi
+  fi
+
+  if ! [ -d ${certs_gen_path}/${AgentName} ] ; then
+    install -v -o $user -g $group -m 0755 -d ${certs_gen_path}/${AgentName}
+    if [ $? -gt 0 ] ; then
+      echo "connot create ${certs_gen_path}/${AgentName}" 1>&2
+      (( create_certs++ ))
+    fi
+  fi
+
+  cd ${ca_path}
+
+  if [ $? -gt 0 ] ; then
+    (( create_certs++ ))
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+
+    icinga2 pki new-cert --cn ${AgentName} \
+      --key ${certs_gen_path}/${AgentName}/${AgentName}.key \
+      --csr ${certs_gen_path}/${AgentName}/${AgentName}.csr
+
+    if [ $? -gt 0 ] ; then
+      (( create_certs++ ))
+    fi
+
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+
+    icinga2 pki sign-csr --csr ${certs_gen_path}/${AgentName}/${AgentName}.csr \
+      --cert ${certs_gen_path}/${AgentName}/${AgentName}.crt
+
+    if [ $? -gt 0 ] ; then
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+    if [ -e ${certs_gen_path}/${AgentName}/${AgentName}.csr ] ; then
+      rm -v ${certs_gen_path}/${AgentName}/${AgentName}.csr
+      if [ $? -gt 0 ] ; then
+        (( create_certs++ ))
+      fi
+    fi
+  fi
+
+  cd ${work_dir}
+
+  if [ $? -gt 0 ] ; then
+    (( create_certs++ ))
+  fi
+
+  cd ${script_name}.certs
+ 
+  if [ $? -gt 0 ] ; then
+    (( create_certs++ ))
+  fi
+
+  if [ -d ${AgentName} ] ; then
+    rm -rv ${AgentName}
+    if [ $? -gt 0 ] ; then
+      echo "connot remove ${cert_name}.certs/${AgentName}" 1>&2
+    fi
+  fi
+
+  if [ $? -gt 0 ] ; then
+    (( create_certs++ ))
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+    mv -v ${certs_gen_path}/${AgentName} ${AgentName}
+    if [ $? -gt 0 ] ; then
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+    cp -pdiv ${ca_path}/ca.crt ${AgentName}
+    if [ $? -gt 0 ] ; then
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+    cp -pdiv /etc/icinga2/pki/${CAServer}.crt ${AgentName}
+    if [ $? -gt 0 ] ; then
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+    tar cvzf ${AgentName}.tar.gz ${AgentName}
+    if [ $? -gt 0 ] ; then
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ $create_certs -lt 1 ] ; then
+    if [ -d ${certs_gen_path}/${AgentName} ] ; then
+      rm -rv ${certs_gen_path}/${AgentName}
+      if [ $? -gt 0 ] ; then
+        echo "connot remove ${certs_gen_path}/${AgentName}" 1>&2
+        (( create_certs++ ))
+      fi
+    fi
+  fi
+
+  cd ${work_dir}
+
+  if [ $? -gt 0 ] ; then
+    (( create_certs++ ))
+  fi
+
+  return $create_certs
+
+}
+
+
+# example config
+# create_certs user group of icinga2 on the CAServer
+
+CAServer="node1.localdomain"
+
+AgentName="satellite1.localdomain"
+create_certs nagios nagios
+ 
+AgentName="satellite2.localdomain"
+create_certs nagios nagios
+
+AgentName="satellite3.localdomain"
+create_certs nagios nagios
+
+
