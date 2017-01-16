@@ -111,7 +111,7 @@ function create_certs() {
   if [ -d ${AgentName} ] ; then
     rm -rv ${AgentName}
     if [ $? -gt 0 ] ; then
-      echo "connot remove ${cert_name}.certs/${AgentName}" 1>&2
+      echo "connot remove ${script_name}.certs/${AgentName}" 1>&2
     fi
   fi
 
