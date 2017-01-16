@@ -2,8 +2,10 @@
 # 
 # script generates on an icinga2 master with CA the certs for the pki configuration of an agent or satellite
 #
-# siegfried 20170112
-# version 0.1.0
+# siegfried 20170116
+# version 0.2.0
+# 7zip with encryption
+# if EncryptKey is set we produce tar.7z files with aes encryption, othwise tar.gz
 #
 
 
@@ -37,14 +39,6 @@ function create_certs() {
     install -v -o $user -g $group -m 0755 -d ${certs_gen_path}
     if [ $? -gt 0 ] ; then
       echo "connot create ${certs_gen_path}" 1>&2
-      (( create_certs++ ))
-    fi
-  fi
-
-  if [ -e ${certs_gen_path}/${AgentName}.tar.gz ] ; then
-    rm -rv ${certs_gen_path}/${AgentName}.tar.gz
-    if [ $? -gt 0 ] ; then
-      echo "connot remove ${certs_gen_path}/${AgentName}.tar.gz" 1>&2
       (( create_certs++ ))
     fi
   fi
@@ -125,6 +119,22 @@ function create_certs() {
     (( create_certs++ ))
   fi
 
+  if [ -e ${AgentName}.tar.gz ] ; then
+    rm -rv ${AgentName}.tar.gz
+    if [ $? -gt 0 ] ; then
+      echo "connot remove ${script_name}.certs/${AgentName}.tar.gz" 1>&2
+      (( create_certs++ ))
+    fi
+  fi
+
+  if [ -e ${AgentName}.tar.7z ] ; then
+    rm -rv ${AgentName}.tar.7z
+    if [ $? -gt 0 ] ; then
+      echo "connot remove ${script_name}.certs/${AgentName}.tar.7z" 1>&2
+      (( create_certs++ ))
+    fi
+  fi
+
   if [ $create_certs -lt 1 ] ; then
     mv -v ${certs_gen_path}/${AgentName} ${AgentName}
     if [ $? -gt 0 ] ; then
@@ -147,9 +157,16 @@ function create_certs() {
   fi
 
   if [ $create_certs -lt 1 ] ; then
-    tar cvzf ${AgentName}.tar.gz ${AgentName}
-    if [ $? -gt 0 ] ; then
-      (( create_certs++ ))
+    if [ -z ${EncryptKey} ] ; then
+      tar cvzf ${AgentName}.tar.gz ${AgentName}
+      if [ $? -gt 0 ] ; then
+        (( create_certs++ ))
+      fi
+    else
+      tar cv ${AgentName} | 7z a -si -mhe=on -p${EncryptKey} ${AgentName}.tar.7z
+      if [ $? -gt 0 ] ; then
+        (( create_certs++ ))
+      fi
     fi
   fi
 
@@ -177,6 +194,8 @@ function create_certs() {
 # example config
 # create_certs user group of icinga2 on the CAServer
 
+EncryptKey="mykey1234567890"
+
 CAServer="node1.localdomain"
 
 AgentName="satellite1.localdomain"
@@ -187,5 +206,6 @@ create_certs nagios nagios
 
 AgentName="satellite3.localdomain"
 create_certs nagios nagios
+
 
 
