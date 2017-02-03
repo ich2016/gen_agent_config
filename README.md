@@ -1,7 +1,12 @@
 # gen_agent_config
-Generate Incing2 Agent Configuration
+Generate Incing2 Agent and Satellite Configuration
 
-20161107 Siegfried
+20170203 Siegfried
+
+Version 1.2.1
+- has correct default zonenames
+- config for agents or Satellites for singlemaster or clustermaster
+- config Satellites single or double, like Cluster Satellites
 
 # example listfile
 
